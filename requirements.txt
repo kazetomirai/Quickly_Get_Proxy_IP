@@ -1,0 +1,18 @@
+# YouTube视频密码提取监控工具依赖
+
+# YouTube视频下载和字幕获取
+yt-dlp>=2023.12.30
+
+# 定时任务调度
+APScheduler>=3.10.4
+
+# HTTP请求
+requests>=2.31.0
+
+# 加密库 (二选一)
+cryptography>=41.0.0
+# 或者使用 pycryptodome
+# pycryptodome>=3.19.0
+
+# Base58 编码库
+base58>=2.1.1
