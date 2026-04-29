@@ -16,3 +16,6 @@ cryptography>=41.0.0
 
 # Base58 编码库
 base58>=2.1.1
+
+# 可选：导出浏览器 cookies，用于生成 youtube_cookies.txt
+# pip install browser-cookie3

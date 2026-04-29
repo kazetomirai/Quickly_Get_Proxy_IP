@@ -94,7 +94,7 @@ class SubtitleParser:
             )
             self.entries.append(entry)
 
-        logger.info(f'解析了 {len(self.entries)} 条SRT字幕')
+        # logger.info(f'解析了 {len(self.entries)} 条SRT字幕')
 
     def _parse_vtt(self):
         """解析VTT格式字幕."""
@@ -161,7 +161,7 @@ class SubtitleParser:
             )
             self.entries.append(entry)
 
-        logger.info(f'解析了 {len(self.entries)} 条VTT字幕')
+        # logger.info(f'解析了 {len(self.entries)} 条VTT字幕')
 
     def get_full_text(self) -> str:
         """获取所有字幕的完整文本.
@@ -260,7 +260,7 @@ class SubtitleParser:
 
             if match:
                 password = match.group(1)
-                logger.info(f'从字幕中提取到密码: {password}')
+                # logger.info(f'从字幕中提取到密码: {password}')
                 return password
 
         logger.warning(f'未在字幕中找到关键词"{keyword}"后的{digit_count}位数字')
@@ -312,7 +312,7 @@ def extract_first_https_link(text: str, keyword: str = None) -> str:
         first_link = links[0]
         # 清理可能的结尾标点符号
         first_link = first_link.rstrip('.,;!?））」」』』')
-        logger.info(f'从文本中提取到链接: {first_link}')
+        # logger.info(f'从文本中提取到链接: {first_link}')
         return first_link
 
     logger.warning('未在文本中找到https链接')

@@ -29,11 +29,13 @@ class VideoInfo:
 class YouTubeMonitor:
     """YouTube监控类，用于获取视频信息和字幕."""
 
-    def __init__(self, channel_identifier: str):
+    def __init__(self, channel_identifier: str, cookies_file: Optional[str] = None, cookies_from_browser: Optional[str] = None):
         """初始化YouTube监控器.
 
         Args:
             channel_identifier: 频道标识符，可以是频道ID、用户名或URL
+            cookies_file: cookies文件路径
+            cookies_from_browser: 从浏览器导出cookies，格式为"浏览器名称:配置文件名称"
         """
         self.channel_identifier = channel_identifier
         self.channel_url = self._normalize_channel_url(channel_identifier)
@@ -41,8 +43,17 @@ class YouTubeMonitor:
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
+            'js_runtimes': {                
+                'node': {},
+            },
+            'cookiefile': cookies_file
         }
-
+        
+        # 添加cookies配置
+        if cookies_file:
+            self.ydl_opts['cookiefile'] = cookies_file
+        if cookies_from_browser:
+            self.ydl_opts['cookies_from_browser'] = cookies_from_browser
     def _normalize_channel_url(self, identifier: str) -> str:
         """将各种格式的频道标识符标准化为URL.
 
@@ -121,15 +132,19 @@ class YouTubeMonitor:
         video_url = f'https://www.youtube.com/watch?v={video_id}'
         detail_opts = {
             **self.ydl_opts,
-            'writesubtitles': True,
-            'writeautomaticsub': True,
-            'subtitleslangs': config.SUBTITLE_LANGUAGES,
+            "remote_components": ["ejs:github"],
             'skip_download': True,
+            "format": "bestvideo+bestaudio",  # 自动选最高清
+            "merge_output_format": "mp4",
+            "noplaylist": True,
+            "nocheckcertificate": True,
         }
 
         try:
             with yt_dlp.YoutubeDL(detail_opts) as ydl:
                 info = ydl.extract_info(video_url, download=False)
+
+
 
                 if not info:
                     return None
@@ -156,7 +171,15 @@ class YouTubeMonitor:
                 )
 
         except Exception as e:
-            logger.error(f'获取视频详情失败 {video_id}: {e}')
+            error_message = str(e)
+            if 'Use --cookies-from-browser or --cookies' in error_message or 'Sign in to confirm you’re not a bot' in error_message:
+                logger.error(
+                    f'获取视频详情失败 {video_id}: YouTube 需要登录 cookies，当前 cookies 未生效。'
+                    ' 请使用浏览器 cookies 或手动导出 cookies 文件。'
+                    f' 详细错误: {e}'
+                )
+            else:
+                logger.error(f'获取视频详情失败 {video_id}: {e}')
             return None
 
     def download_subtitle(self, video_id: str, language: str = 'zh-CN') -> Optional[str]:
@@ -174,6 +197,7 @@ class YouTubeMonitor:
         # 创建临时目录
         with tempfile.TemporaryDirectory() as temp_dir:
             download_opts = {
+                **self.ydl_opts,
                 'quiet': True,
                 'no_warnings': True,
                 'skip_download': True,
@@ -182,6 +206,7 @@ class YouTubeMonitor:
                 'subtitleslangs': [language],
                 'subtitlesformat': 'srt',
                 'outtmpl': os.path.join(temp_dir, '%(id)s.%(ext)s'),
+                'format': 'worst',  # 使用最低质量格式
             }
 
             try:
@@ -227,7 +252,7 @@ class YouTubeMonitor:
         for lang in config.SUBTITLE_LANGUAGES:
             subtitle = self.download_subtitle(video_id, lang)
             if subtitle:
-                logger.info(f'成功获取字幕: {video_id}, 语言: {lang}')
+                # logger.info(f'成功获取字幕: {video_id}, 语言: {lang}')
                 return subtitle
 
         # 如果没有找到，尝试获取视频详情查看可用字幕
@@ -237,7 +262,7 @@ class YouTubeMonitor:
                 clean_lang = lang.replace('(auto)', '')
                 subtitle = self.download_subtitle(video_id, clean_lang)
                 if subtitle:
-                    logger.info(f'成功获取字幕: {video_id}, 语言: {lang}')
+                    # logger.info(f'成功获取字幕: {video_id}, 语言: {lang}')
                     return subtitle
 
         logger.warning(f'未找到可用字幕: {video_id}')
